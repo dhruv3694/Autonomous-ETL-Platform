@@ -473,6 +473,7 @@ def update_mapping_approval(plan_id: str, approved: bool, reviewer: str = "", co
         if not row:
             raise ValueError(f"Mapping plan {plan_id!r} does not exist")
         plan = json.loads(row["plan_json"])
+        plan["approved"] = bool(approved)
         # Merge reviewer metadata
         if reviewer:
             plan["reviewer"] = reviewer
