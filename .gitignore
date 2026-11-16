@@ -1,0 +1,16 @@
+﻿.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+scratch/
+workflow_history.db
+*.db-journal
+*.sqlite3
+.env
+.env.*
+.DS_Store
+Thumbs.db
