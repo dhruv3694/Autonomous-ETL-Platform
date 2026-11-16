@@ -51,12 +51,12 @@ def _bounded_value(val: Any) -> str:
 # Logical type inference
 # ---------------------------------------------------------------------------
 _LOGICAL_TYPE_PATTERNS = {
-    "email": re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", re.IGNORECASE),
+    "email": re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$", re.IGNORECASE),
     "phone": re.compile(
-        r"^(?:\+?\d{1,3}[ -]?)?(?:\(?\d{2,4}\)?[ -]?)?\d{3,4}[ -]?\d{4}$"
+        r"^(?:\+?\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-]?)?\d{3,4}[ .-]?\d{4}$"
     ),
-    "currency": re.compile(r"^[\\$€£¥]\s?\\d+(?:[.,]\d{2})?$"),
-    "percentage": re.compile(r"^\\d+(?:[.,]\\d+)?%$"),
+    "currency": re.compile(r"^[\$€£¥]\s?\d+(?:[.,]\d{2})?$"),
+    "percentage": re.compile(r"^\d+(?:[.,]\d+)?%$"),
     "identifier": re.compile(r"^[A-Za-z0-9_-]+$"),
 }
 
@@ -91,13 +91,24 @@ def _infer_logical_type(series: pd.Series) -> str:
     # Date / datetime detection (sample up to 100 rows)
     sample = non_null.head(100)
     try:
-        parsed = pd.to_datetime(sample, errors="coerce", infer_datetime_format=True)
+        parsed = pd.to_datetime(sample, errors="coerce")
         if parsed.notna().all():
             if parsed.dt.time.eq(pd.Timestamp("00:00").time()).all():
                 return "date"
             return "datetime"
     except Exception:
         pass
+
+    # Column names such as "full_name" / "customer_name" are names, not IDs,
+    # even though the sample values could each look like an identifier token.
+    column_name = str(series.name or "").lower()
+    if (
+        "name" in column_name
+        and "id" not in column_name
+        and "code" not in column_name
+        and "number" not in column_name
+    ):
+        return "text"
 
     # Pattern based detection – use first 20 non‑null values for speed
     for pattern_name, regex in _LOGICAL_TYPE_PATTERNS.items():
